@@ -237,6 +237,12 @@ def sync_event_to_google(event_id: int):
         time_hhmm = format_time(ev["event_time"]) or "09:00"
         google_event_id = ev.get("google_event_id")
 
+        if ev["event_date"] and ev["event_date"] < datetime.date.today():
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot sync past events"
+            )
+
         service = get_calendar_service()
         body = build_event_body(title, date_str, time_hhmm)
 

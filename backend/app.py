@@ -77,8 +77,21 @@ Option B:
 [{{"title":"...","date":"YYYY-MM-DD","time":"HH:MM"}}]
 
 Rules:
-- Extract explicit or strongly implied deadlines, due dates, renewals, expiries, meetings, appointments, hearings, follow-ups, admissions, tests.
-- Only include events with real dates.
+- Extract explicit dates AND relative deadlines.
+- Relative phrases include:
+  - within X days
+  - after X days
+  - before X days
+
+- If a relative deadline is found:
+  1. Find the related base date in the document (e.g., submission date, decision date).
+  2. Calculate the final date.
+  3. Return ONLY the computed final date in YYYY-MM-DD.
+
+- If no base date is available → IGNORE the event.
+
+- Always return final resolved dates only (NO "within X days" in output).
+
 - If time missing, use "{default_time}".
 - date must be YYYY-MM-DD
 - time must be HH:MM (24-hour)

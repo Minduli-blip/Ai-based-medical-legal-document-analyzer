@@ -252,28 +252,42 @@ export default function CalendarSync() {
     .sort((a, b) => a.daysUntil - b.daysUntil)
 
   // ✅ Sync button -> calls backend /events/{id}/sync (POST)
-  const handleSync = useCallback(
-    async (id: number) => {
-      const ev = deadlines.find((d) => d.id === id)
-      try {
-        const res = await fetch(`${API_BASE}/events/${id}/sync`, { method: "POST" })
-        if (!res.ok) {
-          const txt = await res.text().catch(() => "")
-          throw new Error(`Sync failed: ${res.status} ${txt}`)
-        }
+const handleSync = useCallback(
+  async (id: number) => {
+    const ev = deadlines.find((d) => d.id === id)
+    if (!ev) return
 
-        setSynced((prev) => new Set(prev).add(id))
-        if (ev) setToastMessage(`"${ev.title}" synced to Google Calendar`)
+    // 🔴 Block past dates
+    const today = new Date()
+    const eventDate = new Date(ev.date)
 
-        // refresh from DB (status/google_event_id)
-        await loadEvents()
-      } catch (err: any) {
-        console.error(err)
-        setToastMessage(err?.message || "Sync failed")
+    today.setHours(0, 0, 0, 0)
+    eventDate.setHours(0, 0, 0, 0)
+
+    if (eventDate < today) {
+      setToastMessage("Cannot sync past events")
+      return
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/events/${id}/sync`, { method: "POST" })
+
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "")
+        throw new Error(`Sync failed: ${res.status} ${txt}`)
       }
-    },
-    [deadlines, loadEvents]
-  )
+
+      setSynced((prev) => new Set(prev).add(id))
+      if (ev) setToastMessage(`"${ev.title}" synced to Google Calendar`)
+
+      await loadEvents()
+    } catch (err: any) {
+      console.error(err)
+      setToastMessage(err?.message || "Sync failed")
+    }
+  },
+  [deadlines, loadEvents]
+)
 
   const handleUnsync = useCallback(
   async (id: number) => {
